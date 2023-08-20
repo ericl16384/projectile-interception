@@ -11,10 +11,10 @@ screen = pygame.display.set_mode(size)
 pygame.display.set_caption("main.py")
 
 
-objects = [
+interception.objects.extend([
     interception.Shooter((200, 200)),
     interception.Target((1000, 400), (-4, 0))
-]
+])
 
 
 done = False
@@ -30,18 +30,18 @@ while not done:
 
     screen.fill("black")
 
-    for o in objects:
+    for o in interception.objects:
         o.draw(screen)
 
     pygame.display.flip()
 
 
     i = 0
-    while i < len(objects):
-        o = objects[i]
-        o.update(objects)
+    while i < len(interception.objects):
+        o = interception.objects[i]
+        o.update()
         if not o.valid:
-            objects.pop(i)
+            interception.objects.pop(i)
             continue
         i += 1
 

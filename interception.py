@@ -1,5 +1,9 @@
 import numpy as np, pygame
 
+
+objects = []
+
+
 def to_vector(v):
     return np.array(v, dtype=np.float32)
 
@@ -12,14 +16,20 @@ def magnitude(vector):
 def normalize(vector):
     return vector / magnitude(vector)
 
+
+def find_intercept_time(relative_position, relative_velocity, projectile_speed):
+    drift = 0
+
 def find_intercept_vector(launcher_position, launcher_velocity, target_position, target_velocity, projectile_speed):
     # simple version ignoring velocity
     # assert magnitude(launcher_velocity) == 0
     # assert magnitude(target_velocity) == 0
 
-    displacement = target_position - launcher_position
+    
+    time = find_intercept_time(target_position - launcher_position, target_velocity - launcher_velocity, projectile_speed)
 
-    vector = normalize(displacement) * projectile_speed
+    # todo
+    vector = normalize(target_position - launcher_position) * projectile_speed
 
     return vector
 
@@ -35,7 +45,7 @@ class DebugLine:
     def draw(self, surface):
         pygame.draw.line(surface, "yellow", vector_to_int_tuple(self.start), vector_to_int_tuple(self.end))
     
-    def update(self, objects):
+    def update(self):
         if self.lifetime_countdown > 0:
             self.lifetime_countdown -= 1
         if not self.lifetime_countdown:
@@ -54,7 +64,7 @@ class Projectile:
     def draw(self, surface):
         pygame.draw.circle(surface, "green", vector_to_int_tuple(self.pos), self.radius)
     
-    def update(self, objects):
+    def update(self):
         self.pos += self.vel
 
         if self.lifetime_countdown > 0:
@@ -83,17 +93,17 @@ class Shooter:
     def draw(self, surface):
         pygame.draw.circle(surface, "blue", vector_to_int_tuple(self.pos), self.radius)
     
-    def update(self, objects):
+    def update(self):
         if self.reload_countdown > 0:
             self.reload_countdown -= 1
 
         if not self.reload_countdown:
             for o in objects:
                 if isinstance(o, Target):
-                    self.shoot_at_target(objects, o)
+                    self.shoot_at_target(o)
                     break
 
-    def shoot_at_target(self, objects, target):
+    def shoot_at_target(self, target):
         self.reload_countdown = self.shoot_reload
 
         p = Projectile(self.pos, find_intercept_vector(
@@ -117,7 +127,7 @@ class Target:
     def draw(self, surface):
         pygame.draw.circle(surface, "red", vector_to_int_tuple(self.pos), self.radius)
     
-    def update(self, objects):
+    def update(self):
         self.pos += self.vel
 
         if self.pos[0] <= 0:
