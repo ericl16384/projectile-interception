@@ -1,4 +1,4 @@
-import random, pygame
+import pygame
 
 import interception
 
@@ -13,7 +13,7 @@ pygame.display.set_caption("main.py")
 
 objects = [
     interception.Shooter((200, 200)),
-    interception.Target((1000, 400), (0, 0))
+    interception.Target((1000, 400), (-4, 0))
 ]
 
 
