@@ -22,7 +22,7 @@ interception.objects.extend([
     # # interception.Target((1500, 300), (-2, 0))
 ])
 
-for i in range(10):
+for i in range(25):
     # interception.objects.append(interception.Target((100, 125 + i*100), (0, 0)))
     interception.add_target()
 

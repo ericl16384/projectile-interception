@@ -158,7 +158,7 @@ class Shooter:
 
     projectile_speed = 5
     projectile_lifetime = -1 # 60 * 4
-    shoot_reload = 60 / 3
+    shoot_reload = 60 / 5
 
     def __init__(self, pos, vel) -> None:
         self.pos = to_vector(pos)
@@ -188,22 +188,34 @@ class Shooter:
     def try_shooting(self):
         velocity_time_pairs = []
         for o in objects:
-            if isinstance(o, Target):
+            if isinstance(o, Target) and not o.incoming_shot_countdowns:
                 try:
                     velocity_time_pairs.append(find_intercept_data(
                         self.pos, to_vector((0, 0)), o.pos, o.vel, self.projectile_speed
                     ))
+                    continue
                 except ImpossibleInterceptVector:
                     pass
+            velocity_time_pairs.append(None)
         
-        min_vt = None
-        for vt in velocity_time_pairs:
-            if not min_vt or vt[1] < min_vt[1]:
-                min_vt = vt
+        min_vti = None
+        target = None
+        for i, vt in enumerate(velocity_time_pairs):
+            if not min_vti or (vt != None and vt[1] < min_vti[1]):
+                min_vti = vt
+                target = objects[i]
         
-        if min_vt:
+        if min_vti:
             self.reload_countdown = self.shoot_reload
-            objects.append(Projectile(self.pos, min_vt[0], self.projectile_lifetime))
+
+            # print(min_vti)
+            # input()
+            v, t, i = min_vti
+
+            p = Projectile(self.pos, v, self.projectile_lifetime)
+            objects.append(p)
+            target.incoming_shot_countdowns.append(np.ceil(t))
+
             return True
         else:
             return False
@@ -231,6 +243,8 @@ class Target:
         self.vel = to_vector(vel)
 
         self.valid = True
+
+        self.incoming_shot_countdowns = []
     
     def draw(self, surface):
         pygame.draw.circle(surface, "red", vector_to_int_tuple(self.pos), self.radius)
@@ -246,13 +260,26 @@ class Target:
         
         if self.pos[0] <= 0 + self.radius:
             self.vel[0] = abs(self.vel[0])
+            self.incoming_shot_countdowns.clear()
         elif self.pos[0] >= 1500 - self.radius:
             self.vel[0] = -abs(self.vel[0])
+            self.incoming_shot_countdowns.clear()
         
         if self.pos[1] <= 0 + self.radius:
             self.vel[1] = abs(self.vel[1])
+            self.incoming_shot_countdowns.clear()
         elif self.pos[1] >= 750 - self.radius:
             self.vel[1] = -abs(self.vel[1])
+            self.incoming_shot_countdowns.clear()
+        
+        i = 0
+        while i < len(self.incoming_shot_countdowns):
+            if not self.incoming_shot_countdowns[i]:
+                self.incoming_shot_countdowns.pop(i)
+                continue
+
+            self.incoming_shot_countdowns[i] -= 1
+            i += 1
     
     def hit(self):
         self.valid = False
@@ -271,7 +298,8 @@ class Target:
 
 def add_target():
     speed = 10
-    objects.append(Target(
-        (random.randint(50, 1450), random.randint(100, 650)),
-        (random.randint(-speed, speed), random.randint(-speed, speed))
-    ))
+    vel = (0, 0)
+    while vel[0] == 0 or vel[1] == 0:
+        vel = (random.randint(-speed, speed), random.randint(-speed, speed))
+
+    objects.append(Target((random.randint(50, 1450), random.randint(100, 650)), vel))
