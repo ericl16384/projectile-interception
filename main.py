@@ -13,7 +13,7 @@ pygame.display.set_caption("main.py")
 
 interception.objects.extend([
     interception.Shooter((200, 200)),
-    interception.Target((1000, 400), (-4, 0))
+    interception.Target((1000, 400), (-2, 0))
 ])
 
 

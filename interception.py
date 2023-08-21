@@ -17,23 +17,6 @@ def normalize(vector):
     return vector / magnitude(vector)
 
 
-def find_intercept_time(relative_position, relative_velocity, projectile_speed):
-    drift = 0
-
-def find_intercept_vector(launcher_position, launcher_velocity, target_position, target_velocity, projectile_speed):
-    # simple version ignoring velocity
-    # assert magnitude(launcher_velocity) == 0
-    # assert magnitude(target_velocity) == 0
-
-    
-    time = find_intercept_time(target_position - launcher_position, target_velocity - launcher_velocity, projectile_speed)
-
-    # todo
-    vector = normalize(target_position - launcher_position) * projectile_speed
-
-    return vector
-
-
 class DebugLine:
     def __init__(self, start, end, lifetime_countdown=-1) -> None:
         self.start = to_vector(start)
@@ -50,6 +33,43 @@ class DebugLine:
             self.lifetime_countdown -= 1
         if not self.lifetime_countdown:
             self.valid = False
+
+
+def find_intercept_time(relative_position, relative_velocity, projectile_speed):
+    approach_mag = np.dot(relative_velocity, normalize(relative_position))
+    approach = normalize(relative_position) * approach_mag
+    drift = relative_velocity - approach
+
+    assert magnitude((approach + drift) - relative_velocity) < 0.000001
+
+    time = magnitude(relative_position) / projectile_speed
+
+    target_pos = relative_position + (200, 200)
+
+    l = DebugLine(target_pos, target_pos, 60 * 5)
+    l.end += approach * 20
+    objects.append(l)
+
+    l = DebugLine(target_pos, target_pos, 60 * 5)
+    l.end += drift * 20
+    objects.append(l)
+
+    return time
+
+def find_intercept_vector(launcher_position, launcher_velocity, target_position, target_velocity, projectile_speed):
+    # simple version ignoring velocity
+    # assert magnitude(launcher_velocity) == 0
+    # assert magnitude(target_velocity) == 0
+
+    
+    time = find_intercept_time(target_position - launcher_position, target_velocity - launcher_velocity, projectile_speed)
+
+    # todo
+    vector = normalize(target_position - launcher_position) * projectile_speed
+    # objects.append(DebugLine(target_position, launcher_position, np.ceil(time)))
+
+    return vector
+
 
 class Projectile:
     radius = 5
@@ -110,9 +130,6 @@ class Shooter:
             self.pos, to_vector((0, 0)), target.pos, target.vel, self.projectile_speed
         ), self.projectile_lifetime)
         objects.append(p)
-
-        l = DebugLine(self.pos, target.pos, self.projectile_lifetime)
-        objects.append(l)
 
 
 class Target:
