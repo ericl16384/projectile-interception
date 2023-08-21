@@ -35,37 +35,62 @@ class DebugLine:
             self.valid = False
 
 
-def find_intercept_time(relative_position, relative_velocity, projectile_speed):
-    approach_mag = np.dot(relative_velocity, normalize(relative_position))
-    approach = normalize(relative_position) * approach_mag
-    drift = relative_velocity - approach
-
-    assert magnitude((approach + drift) - relative_velocity) < 0.000001
-
-    time = magnitude(relative_position) / projectile_speed
-
-    target_pos = relative_position + (200, 200)
-
-    l = DebugLine(target_pos, target_pos, 60 * 5)
-    l.end += approach * 20
-    objects.append(l)
-
-    l = DebugLine(target_pos, target_pos, 60 * 5)
-    l.end += drift * 20
-    objects.append(l)
-
-    return time
-
 def find_intercept_vector(launcher_position, launcher_velocity, target_position, target_velocity, projectile_speed):
     # simple version ignoring velocity
     # assert magnitude(launcher_velocity) == 0
     # assert magnitude(target_velocity) == 0
 
     
-    time = find_intercept_time(target_position - launcher_position, target_velocity - launcher_velocity, projectile_speed)
+    relative_position = target_position - launcher_position
+    relative_velocity = target_velocity - launcher_velocity
+
+    
+    target_approach_mag = np.dot(relative_velocity, normalize(relative_position))
+    target_approach = normalize(relative_position) * target_approach_mag
+    target_drift = relative_velocity - target_approach
+
+    assert magnitude((target_approach + target_drift) - relative_velocity) < 0.000001
+
+    # time = magnitude(relative_position) / projectile_speed
+
+    # target_pos = relative_position + (200, 200)
+
+    # l = DebugLine(target_pos, target_pos, 60 * 5)
+    # l.end += target_approach * 20
+    # objects.append(l)
+
+    # l = DebugLine(target_pos, target_pos, 60 * 5)
+    # l.end += target_drift * 20
+    # objects.append(l)
+
+
+    projectile_drift = target_drift
+    projectile_drift_mag = magnitude(projectile_drift)
+    projectile_approach_mag = np.sqrt(projectile_speed**2 + projectile_drift_mag**2)
+    projectile_approach = normalize(relative_position) * projectile_approach_mag
+
+    relative_approach_mag = projectile_approach_mag - target_approach_mag
+    time = magnitude(relative_position) / relative_approach_mag
+
+
+    # total_drift = target_drift * time
+    
+    # objects.append(DebugLine(target_position + total_drift, launcher_position + total_drift, 60 * 2))
+
+
+    vector = projectile_drift + projectile_approach
+
+    
+    impact = launcher_position + vector*time
+    objects.append(DebugLine(launcher_position, impact, np.ceil(time)))
+    # objects.append(DebugLine(launcher_position, target_position, np.ceil(time)))
+    # objects.append(DebugLine(target_position, impact, np.ceil(time)))
+
+
+
 
     # todo
-    vector = normalize(target_position - launcher_position) * projectile_speed
+    # vector = normalize(target_position - launcher_position) * projectile_speed
     # objects.append(DebugLine(target_position, launcher_position, np.ceil(time)))
 
     return vector
@@ -101,7 +126,7 @@ class Shooter:
 
     projectile_speed = 5
     projectile_lifetime = 60 * 4
-    shoot_reload = 60 * 2
+    shoot_reload = 60
 
     def __init__(self, pos) -> None:
         self.pos = to_vector(pos)
@@ -147,7 +172,7 @@ class Target:
     def update(self):
         self.pos += self.vel
 
-        if self.pos[0] <= 0:
+        if self.pos[0] <= 0 + 100:
             self.vel[0] = abs(self.vel[0])
-        if self.pos[0] >= 1500:
+        if self.pos[0] >= 1500 - 100:
             self.vel[0] = -abs(self.vel[0])
