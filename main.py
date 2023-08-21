@@ -1,4 +1,4 @@
-import pygame
+import pygame, random
 
 import interception
 
@@ -12,7 +12,8 @@ pygame.display.set_caption("main.py")
 
 
 interception.objects.extend([
-    interception.Shooter((750, 375), (0, 0)),
+    interception.Shooter((500, 375), (0, 0)),
+    interception.Shooter((1000, 375), (0, 0)),
     
     # interception.Target((200, 400), (0.5, 0)),
     # interception.Target((200, 300), (1, 0)),
@@ -21,8 +22,9 @@ interception.objects.extend([
     # # interception.Target((1500, 300), (-2, 0))
 ])
 
-for i in range(5):
-    interception.objects.append(interception.Target((100, 125 + i*100), (0, 0)))
+for i in range(10):
+    # interception.objects.append(interception.Target((100, 125 + i*100), (0, 0)))
+    interception.add_target()
 
 
 done = False
