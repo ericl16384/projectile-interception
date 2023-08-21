@@ -12,9 +12,17 @@ pygame.display.set_caption("main.py")
 
 
 interception.objects.extend([
-    interception.Shooter((200, 200)),
-    interception.Target((1000, 400), (-2, 0))
+    interception.Shooter((750, 375), (0, 0)),
+    
+    # interception.Target((200, 400), (0.5, 0)),
+    # interception.Target((200, 300), (1, 0)),
+    # interception.Target((200, 500), (0.5, 0)),
+    # # interception.Target((1500, 200), (-2, 0)),
+    # # interception.Target((1500, 300), (-2, 0))
 ])
+
+for i in range(5):
+    interception.objects.append(interception.Target((100, 125 + i*100), (0, 0)))
 
 
 done = False

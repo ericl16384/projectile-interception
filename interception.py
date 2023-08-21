@@ -1,4 +1,4 @@
-import numpy as np, pygame
+import numpy as np, pygame, random
 
 
 objects = []
@@ -35,7 +35,10 @@ class DebugLine:
             self.valid = False
 
 
-def find_intercept_vector(launcher_position, launcher_velocity, target_position, target_velocity, projectile_speed):
+class ImpossibleInterceptVector(Exception):
+    pass
+
+def find_intercept_vector(launcher_position, launcher_velocity, target_position, target_velocity, projectile_speed, time_limit=-1):
     # simple version ignoring velocity
     # assert magnitude(launcher_velocity) == 0
     # assert magnitude(target_velocity) == 0
@@ -70,15 +73,23 @@ def find_intercept_vector(launcher_position, launcher_velocity, target_position,
     projectile_approach = normalize(relative_position) * projectile_approach_mag
 
     relative_approach_mag = projectile_approach_mag - target_approach_mag
+
+    if relative_approach_mag <= 0:
+        raise ImpossibleInterceptVector("relative velocity could not be overcome")
+    
     time = magnitude(relative_position) / relative_approach_mag
+
+    if time_limit != -1 and time > time_limit:
+        raise ImpossibleInterceptVector(f"time limit exceeded: {time}/{time_limit}")
+    
+    vector = projectile_drift + projectile_approach
+
 
 
     # total_drift = target_drift * time
     
     # objects.append(DebugLine(target_position + total_drift, launcher_position + total_drift, 60 * 2))
 
-
-    vector = projectile_drift + projectile_approach
 
     
     impact = launcher_position + vector*time
@@ -112,6 +123,11 @@ class Projectile:
     def update(self):
         self.pos += self.vel
 
+        if self.pos[0] <= 0 + self.radius or self.pos[0] >= 1500 - self.radius:
+            self.valid = False
+        if self.pos[1] <= 0 + self.radius or self.pos[1] >= 750 - self.radius:
+            self.valid = False
+
         if self.lifetime_countdown > 0:
             self.lifetime_countdown -= 1
         if not self.lifetime_countdown:
@@ -120,16 +136,18 @@ class Projectile:
         for o in objects:
             if isinstance(o, Target) and magnitude(o.pos - self.pos) <= self.radius + o.radius:
                 self.valid = False
+                o.hit()
 
 class Shooter:
     radius = 15
 
-    projectile_speed = 5
-    projectile_lifetime = 60 * 4
+    projectile_speed = 4
+    projectile_lifetime = -1 # 60 * 4
     shoot_reload = 60
 
-    def __init__(self, pos) -> None:
+    def __init__(self, pos, vel) -> None:
         self.pos = to_vector(pos)
+        self.vel = to_vector(vel)
 
         self.reload_countdown = 0
 
@@ -139,23 +157,35 @@ class Shooter:
         pygame.draw.circle(surface, "blue", vector_to_int_tuple(self.pos), self.radius)
     
     def update(self):
+        self.pos += self.vel
+
+        if self.pos[1] <= 50:
+            self.vel[1] = abs(self.vel[1])
+        elif self.pos[1] >= 700:
+            self.vel[1] = -abs(self.vel[1])
+
         if self.reload_countdown > 0:
             self.reload_countdown -= 1
 
         if not self.reload_countdown:
             for o in objects:
-                if isinstance(o, Target):
-                    self.shoot_at_target(o)
+                if isinstance(o, Target) and self.shoot_at_target(o):
                     break
 
     def shoot_at_target(self, target):
+        try:
+            velocity = find_intercept_vector(
+                self.pos, to_vector((0, 0)), target.pos, target.vel, self.projectile_speed
+            )
+        except ImpossibleInterceptVector:
+            return False
+        
         self.reload_countdown = self.shoot_reload
 
-        p = Projectile(self.pos, find_intercept_vector(
-            self.pos, to_vector((0, 0)), target.pos, target.vel, self.projectile_speed
-        ), self.projectile_lifetime)
+        p = Projectile(self.pos, velocity, self.projectile_lifetime)
         objects.append(p)
 
+        return True
 
 class Target:
     radius = 10
@@ -172,7 +202,29 @@ class Target:
     def update(self):
         self.pos += self.vel
 
-        if self.pos[0] <= 0 + 100:
+        # if self.pos[0] <= 0 + 100:
+        #     self.hit()
+            # self.vel[0] = abs(self.vel[0])
+        # if self.pos[0] >= 1500 - 100:
+        #     self.vel[0] = -abs(self.vel[0])
+        
+        if self.pos[0] <= 0 + self.radius:
             self.vel[0] = abs(self.vel[0])
-        if self.pos[0] >= 1500 - 100:
+        elif self.pos[0] >= 1500 - self.radius:
             self.vel[0] = -abs(self.vel[0])
+        
+        if self.pos[1] <= 0 + self.radius:
+            self.vel[1] = abs(self.vel[1])
+        elif self.pos[1] >= 750 - self.radius:
+            self.vel[1] = -abs(self.vel[1])
+    
+    def hit(self):
+        self.valid = False
+
+        # objects.append(Target((1500, random.randint(100, 650)), self.vel))
+
+        # print("hit")
+        objects.append(Target(
+            (random.randint(50, 1450), random.randint(100, 650)),
+            (random.randint(-5, 5), random.randint(-5, 5))
+        ))
